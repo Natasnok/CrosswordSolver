@@ -126,9 +126,7 @@ def solve_route():
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve_frontend(path):
-    file_path = os.path.join(app.static_folder, path)
-
-    if path != "" and os.path.isfile(file_path):
-        return send_from_directory(app.static_folder, path)
-
-    return send_from_directory(app.static_folder, "index.html")
+    file_path = os.path.join(FRONTEND_DIST, path)
+    if path and os.path.isfile(file_path):
+        return send_from_directory(FRONTEND_DIST, path)
+    return send_from_directory(FRONTEND_DIST, "index.html")
