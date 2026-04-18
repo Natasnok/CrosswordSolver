@@ -66,7 +66,7 @@ def serve_frontend(path):
 
     return send_from_directory(app.static_folder, "index.html")
 
-@app.route('/api', methods=['GET'])
+@app.route('/api', methods=['GET'], strict_slashes=False)
 def home():
     return jsonify({
         'message': 'API Flask du solver de mots croisés active',
