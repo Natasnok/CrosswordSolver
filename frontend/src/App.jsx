@@ -122,13 +122,12 @@ export default function App() {
       </div>
 
       <button
-        className="solve-btn"
+        className={`solve-btn ${loading ? "loading" : ""}`}
         onClick={runSolver}
         disabled={!gridFile || !defsFile || loading}
       >
         {loading ? "Analyse en cours..." : "Lancer le solver"}
       </button>
-
       {resultGrid && (
         <div
           className="result-grid"
