@@ -54,18 +54,6 @@ def build_test_cases(definition_word_list, info_word_list):
 
     return test_cases
 
-@app.route("/", defaults={"path": ""})
-@app.route("/<path:path>")
-def serve_frontend(path):
-    if path.startswith("api"):
-        return jsonify({"success": False, "error": "API route not found"}), 404
-
-    file_path = os.path.join(app.static_folder, path)
-    if path and os.path.exists(file_path):
-        return send_from_directory(app.static_folder, path)
-
-    return send_from_directory(app.static_folder, "index.html")
-
 @app.route('/api', methods=['GET'], strict_slashes=False)
 def home():
     return jsonify({
@@ -74,7 +62,7 @@ def home():
         'required_fields': ['grid_image', 'definitions_image']
     })
 
-@app.route('/api/solve', methods=['POST'])
+@app.route('/api/solve', methods=['POST'], strict_slashes=False)
 def solve_route():
     grid_file = request.files.get('grid_image')
     defs_file = request.files.get('definitions_image')
@@ -133,3 +121,13 @@ def solve_route():
                 os.rmdir(temp_dir)
         except OSError:
             pass
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    file_path = os.path.join(app.static_folder, path)
+
+    if path != "" and os.path.isfile(file_path):
+        return send_from_directory(app.static_folder, path)
+
+    return send_from_directory(app.static_folder, "index.html")
