@@ -1,8 +1,8 @@
-opencv-python
-numpy
-matplotlib
 Flask
 flask-cors
 gunicorn
+requests
+beautifulsoup4
 pytesseract
-Pillow
+numpy
+opencv-python-headless
