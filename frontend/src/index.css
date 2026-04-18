@@ -48,7 +48,7 @@ input {
 
 .app-shell {
   min-height: 100vh;
-  padding: 32px 16px 56px;
+  padding: 22px 16px 40px;
 }
 
 .app {
@@ -71,10 +71,10 @@ input {
 
 .hero h1 {
   margin: 0;
-  max-width: 13ch;
-  font-size: clamp(2rem, 5vw, 4rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
+  max-width: 16ch;
+  font-size: clamp(1.55rem, 3.2vw, 2.7rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
 }
 
 .hero-text {
@@ -269,6 +269,14 @@ input {
   border-radius: var(--radius);
   background: rgba(10, 15, 30, 0.72);
   border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.result-head {
+  width: 100%;
+  text-align: center;
 }
 
 .result-head h2 {
@@ -290,6 +298,8 @@ input {
   padding: 8px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
+  justify-content: center;
+  margin-inline: auto;
 }
 
 .result-cell {

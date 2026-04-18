@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./index.css";
 
-function ImagePreview({
-  label,
-  file,
-  preview,
-  onFileChange,
-  onRemove,
-}) {
+function ImagePreview({ label, file, preview, onFileChange, onRemove }) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleInputChange = (e) => {
@@ -99,6 +93,7 @@ export default function App() {
   const [defsPreview, setDefsPreview] = useState(null);
 
   const [resultGrid, setResultGrid] = useState(null);
+  const [showResult, setShowResult] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -122,6 +117,11 @@ export default function App() {
   }, [defsFile]);
 
   const runSolver = async () => {
+    if (resultGrid && showResult) {
+      setShowResult(false);
+      return;
+    }
+
     if (!gridFile || !defsFile) return;
 
     setLoading(true);
@@ -144,6 +144,7 @@ export default function App() {
       }
 
       setResultGrid(data.result);
+      setShowResult(true);
     } catch (err) {
       console.error(err);
       alert("Erreur lors du lancement du solver");
@@ -152,16 +153,30 @@ export default function App() {
     }
   };
 
+  const handleGridFileChange = (file) => {
+    setGridFile(file);
+    setResultGrid(null);
+    setShowResult(false);
+  };
+
+  const handleDefsFileChange = (file) => {
+    setDefsFile(file);
+    setResultGrid(null);
+    setShowResult(false);
+  };
+
   const removeGrid = () => {
     setGridFile(null);
     setGridPreview(null);
     setResultGrid(null);
+    setShowResult(false);
   };
 
   const removeDefs = () => {
     setDefsFile(null);
     setDefsPreview(null);
     setResultGrid(null);
+    setShowResult(false);
   };
 
   return (
@@ -181,7 +196,7 @@ export default function App() {
             label="Image de la grille"
             file={gridFile}
             preview={gridPreview}
-            onFileChange={setGridFile}
+            onFileChange={handleGridFileChange}
             onRemove={removeGrid}
           />
 
@@ -189,7 +204,7 @@ export default function App() {
             label="Image des définitions"
             file={defsFile}
             preview={defsPreview}
-            onFileChange={setDefsFile}
+            onFileChange={handleDefsFileChange}
             onRemove={removeDefs}
           />
         </div>
@@ -198,13 +213,17 @@ export default function App() {
           <button
             className={`solve-btn ${loading ? "loading" : ""}`}
             onClick={runSolver}
-            disabled={!gridFile || !defsFile || loading}
+            disabled={loading || !gridFile || !defsFile}
           >
-            {loading ? "Analyse en cours..." : "Lancer le solver"}
+            {loading
+              ? "Analyse en cours..."
+              : resultGrid && showResult
+              ? "Masquer le résultat"
+              : "Lancer le solver"}
           </button>
         </div>
 
-        {resultGrid && (
+        {resultGrid && showResult && (
           <div className="result-section">
             <div className="result-head">
               <h2>Résultat</h2>
