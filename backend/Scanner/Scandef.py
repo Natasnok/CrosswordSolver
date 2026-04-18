@@ -1,6 +1,7 @@
 import cv2
 import pytesseract
 import re
+import os
 
 direction = 'V'
 
@@ -75,7 +76,9 @@ def split_direction(text, mode):
 
 
 def scan_definitions(nom_image, mode):
-    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    tesseract_cmd = os.getenv("TESSERACT_CMD")
+    if tesseract_cmd:
+        pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
 
     img = cv2.imread(nom_image)
     if img is None:
