@@ -11,7 +11,7 @@ from backend.Solver.CrosswordSolver import solve_crossword
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
 
-app = Flask(__name__, static_folder=FRONTEND_DIST, static_url_path="/")
+app = Flask(__name__)
 CORS(app)
 
 def build_test_cases(definition_word_list, info_word_list):
@@ -66,6 +66,7 @@ def home():
 def solve_route():
     grid_file = request.files.get('grid_image')
     defs_file = request.files.get('definitions_image')
+    print(grid_file,defs_file)
 
     if grid_file is None or defs_file is None:
         return jsonify({
