@@ -51,7 +51,7 @@ def build_test_cases(definition_word_list, info_word_list):
 
     return test_cases
 
-@app.route('/api/', methods=['GET'])
+@app.route('/api', methods=['GET'])
 def home():
     return jsonify({
         'message': 'API Flask du solver de mots croisés active',
@@ -119,7 +119,3 @@ def solve_route():
                 os.rmdir(temp_dir)
         except OSError:
             pass
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
