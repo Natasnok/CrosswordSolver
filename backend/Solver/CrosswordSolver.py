@@ -7,7 +7,6 @@ import sys
 sys.stdout.reconfigure(encoding="utf-8")
 from collections import defaultdict
 from ..config import *
-from copy import deepcopy
 
 '''
 CELL = 35
@@ -179,23 +178,16 @@ def get_candidates(case, grid, used_words):
     return results
 
 
-def solve(cases, grid, used_words=None, index=0, best=None, filled=0):
+def solve(cases, grid, used_words=None, index=0):
     if used_words is None:
         used_words = set()
 
-    if best is None:
-        best = {"score": filled, "grid": deepcopy(grid)}
-
-    if filled > best["score"]:
-        best["score"] = filled
-        best["grid"] = deepcopy(grid)
-
     if index == len(cases):
-        return True, best
+        return True
 
     remaining = cases[index:]
-    ranked = []
 
+    ranked = []
     for case in remaining:
         candidates = get_candidates(case, grid, used_words)
         nb_fixed = sum(
@@ -206,23 +198,23 @@ def solve(cases, grid, used_words=None, index=0, best=None, filled=0):
 
     ranked.sort(key=lambda x: (x[0], x[1]))
     nb_candidates, _, case, candidates = ranked[0]
+
     cases[index:] = [item[2] for item in ranked]
 
     if nb_candidates == 0:
-        return False, best
-
+        return False
+    
     for word in candidates:
-        snapshot, added = place_word(word, case, grid)
-        used_words.add(word)
+        snapshot = place_word(word, case, grid)
+        used_words.add(word)  
 
-        solved, best = solve(cases, grid, used_words, index + 1, best, filled + added)
-        if solved:
-            return True, best
+        if solve(cases, grid, used_words, index + 1):
+            return True
 
         remove_word(snapshot, grid)
         used_words.remove(word)
 
-    return False, best
+    return False
 
 # Main ----------------------------------------------------
 def solve_crossword(test_cases, black_cells, width, height):
