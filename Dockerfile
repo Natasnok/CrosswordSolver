@@ -17,4 +17,8 @@ COPY . .
 
 ENV TESSERACT_CMD=/usr/bin/tesseract
 
+<<<<<<< HEAD:DockerFile
 CMD ["gunicorn", "backend.Main:app", "--bind", "0.0.0.0:5000"]
+=======
+CMD ["gunicorn", "backend.Main:app", "--bind", "0.0.0.0:5000"]
+>>>>>>> a50c1280cfb10781f391c1f7513e6f1abfdc40af:Dockerfile
