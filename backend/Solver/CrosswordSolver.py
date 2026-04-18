@@ -121,9 +121,9 @@ def fillWordList(test_cases, word_by_size):
         solution = findListWord(case["definition"], case["taille"])
         if solution:
             case["solution"] = solution
-            print(f" {case['definition'][:40]} : {solution}")
+            #print(f" {case['definition'][:40]} : {solution}")
         else:
-            print(f" Aucun mot pour : {case['definition']}")
+            #print(f" Aucun mot pour : {case['definition']}")
             case["solution"] = []
             #case["solution"] = word_by_size[case["taille"]]
 

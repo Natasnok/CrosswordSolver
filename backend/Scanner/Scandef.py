@@ -90,5 +90,5 @@ def scan_definitions(nom_image, mode):
 
     raw_text = text.split("\n\n")
     clean_text = [bloc.replace("\n", " ").strip() for bloc in raw_text if bloc.strip()]
-    print(clean_text)
+    #print(clean_text)
     return split_direction(clean_text, mode)

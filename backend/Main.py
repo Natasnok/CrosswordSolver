@@ -66,7 +66,7 @@ def home():
 def solve_route():
     grid_file = request.files.get('grid_image')
     defs_file = request.files.get('definitions_image')
-    print(grid_file,defs_file)
+    #print(grid_file,defs_file)
 
     if grid_file is None or defs_file is None:
         return jsonify({
@@ -98,7 +98,7 @@ def solve_route():
         definition_word_list = scan_definitions(defs_path, 'M')
 
         test_cases = build_test_cases(definition_word_list, info_word_list)
-        print(test_cases)
+        #print(test_cases)
         result = solve_crossword(test_cases, pos_case_noire, nbC, nbR)
 
         return jsonify({
