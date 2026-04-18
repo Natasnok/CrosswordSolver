@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import tempfile
 import os
@@ -8,7 +8,10 @@ from backend.Scanner.Scandef import scan_definitions
 from backend.Scanner.GridReader import scan_grid
 from backend.Solver.CrosswordSolver import solve_crossword
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
+
+app = Flask(__name__, static_folder=FRONTEND_DIST, static_url_path="/")
 CORS(app)
 
 def build_test_cases(definition_word_list, info_word_list):
@@ -51,6 +54,18 @@ def build_test_cases(definition_word_list, info_word_list):
 
     return test_cases
 
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    if path.startswith("api"):
+        return jsonify({"success": False, "error": "API route not found"}), 404
+
+    file_path = os.path.join(app.static_folder, path)
+    if path and os.path.exists(file_path):
+        return send_from_directory(app.static_folder, path)
+
+    return send_from_directory(app.static_folder, "index.html")
+
 @app.route('/api', methods=['GET'])
 def home():
     return jsonify({
@@ -58,7 +73,6 @@ def home():
         'endpoint': 'POST /api/solve',
         'required_fields': ['grid_image', 'definitions_image']
     })
-
 
 @app.route('/api/solve', methods=['POST'])
 def solve_route():
