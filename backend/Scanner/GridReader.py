@@ -16,7 +16,7 @@ def recadrer_image(image, IMG_PATH):
 
     if h*w >= 2000*2000: 
         image = cv2.resize(image, (w // 2, h // 2))
-        #print(f"[RECADRER_IMAGE](RESIZE) ({h} {w}) -> ({h//2} {w//2})")
+        print(f"[RECADRER_IMAGE](RESIZE) ({h} {w}) -> ({h//2} {w//2})")
 
     gris = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, binaire = cv2.threshold(gris, 100, 255, cv2.THRESH_BINARY_INV)
@@ -49,15 +49,15 @@ def recadrer_image(image, IMG_PATH):
 def seuillage_auto(image, IMG_PATH):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     avg_intensity = np.mean(gray)
-    #print("[AUTO_SEUIL] Luminosité moyenne (blanc/noir):", avg_intensity)
+    print("[AUTO_SEUIL] Luminosité moyenne (blanc/noir):", avg_intensity)
     
     #  ////////// suppression de  bruit ///////////////////
     # SEUL VALEUR DANGEREUSE DU CODE (normelement)
     seuil = max(0,int(avg_intensity*0.6))
     seuil2 = min(255,int(avg_intensity*1.3))
 
-    #print("[AUTO_SEUIL] seuil1:",seuil)
-    #print("[AUTO_SEUIL] seuil2 :",seuil2)
+    print("[AUTO_SEUIL] seuil1:",seuil)
+    print("[AUTO_SEUIL] seuil2 :",seuil2)
     
     thresh = cv2.Canny(gray, seuil, seuil2, 3)# fonction tres puissante qu'on a fait en cours (part sur les gradients)
     
@@ -139,8 +139,8 @@ def FoundRawAndCol(tresh):
 
     seuil_h = np.percentile(hori_proj, 85) # en gros ça prend les 15% + grande val 
     seuil_v = np.percentile(vert_proj, 85)
-    #print("[FoundRaw&Column] seuil_h",seuil_h)
-    #print("[FoundRaw&Column] seuil_v",seuil_v)
+    print("[FoundRaw&Column] seuil_h",seuil_h)
+    print("[FoundRaw&Column] seuil_v",seuil_v)
 
     diametre_hori = int(w*0.005)
     diametre_verti = int(h*0.005)
@@ -148,12 +148,12 @@ def FoundRawAndCol(tresh):
     for x in range(w): 
         if moyenne_ensemble_ligne(hori_proj,x,diametre_hori) > seuil_h:
             rawIndex.append(x)
-    #print(f"[Foundraw] : {rawIndex}")
+    print(f"[Foundraw] : {rawIndex}")
 
     for y in range(h):
         if moyenne_ensemble_ligne(vert_proj,y,diametre_verti) > seuil_v:
             colIndex.append(y)
-    #print(f"[Colindex] : {colIndex}")
+    print(f"[Colindex] : {colIndex}")
     return rawIndex,colIndex
 
 def mergeIndex(L, maxLen):
@@ -198,17 +198,17 @@ def scan_grid(IMG_PATH):
 
     # /////////// ANALYSE Image /////////// 
     h, w = image_thresh.shape[:2]
-    #print("MAIN taille : ",h,w)
+    print("MAIN taille : ",h,w)
 
     R,C = FoundRawAndCol(image_thresh)
     R = mergeIndex(R,h)
     C = mergeIndex(C,w)
-    #print(f"[MAIN]apres merge R : {R}")
-    #print(f"[MAIN]apres merge C : {C}")
+    print(f"[MAIN]apres merge R : {R}")
+    print(f"[MAIN]apres merge C : {C}")
 
     nbC = len(R)-1
     nbR= len(C)-1
-    #print(f"[MAIN] grille détecté: {nbC}x{nbR}")
+    print(f"[MAIN] grille détecté: {nbC}x{nbR}")
 
     intersec = [[(x, y) for x in R] for y in C]
     newimg= Drawintersec(img,intersec)
@@ -244,7 +244,7 @@ def scan_grid(IMG_PATH):
 
     pos_case_noire = [(i // nbC, i % nbC) for i, _ in case_noir]
 
-    #print(pos_case_noire)
+    print(pos_case_noire)
     res=[[0 for _ in range(nbC)]for _ in range(nbR)]
     for x,y in pos_case_noire:
         res[x][y]=1
@@ -252,10 +252,10 @@ def scan_grid(IMG_PATH):
     
     Fname= IMG_PATH.split('.')[0]
     path = os.path.join(DIR_RES_PATH, f"{Fname}_intersec.jpg")
-    #print(path)
+    print(path)
     cv2.imwrite(path,newimg)
-    #for l in res:
-        #print(l)
+    for l in res:
+        print(l)
     
     grid = backend.Scanner.GridUtility.Grid(nbR, nbC, pos_case_noire)
     info_word_list = list(grid.get_info_word())

@@ -1,8 +1,5 @@
-Flask
-flask-cors
-gunicorn
-requests
-beautifulsoup4
-pytesseract
+opencv-python
 numpy
-opencv-python-headless
+matplotlib
+unidecode
+cloudscraper
