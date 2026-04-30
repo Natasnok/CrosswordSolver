@@ -1,5 +1,5 @@
 import os
-import sys
+import platform
 import requests
 import random
 from functools import lru_cache
@@ -21,8 +21,15 @@ Wizium = libWizium.Wizium
 # --------------------------------------------------------------------
 # Charger la DLL et créer l'objet
 # --------------------------------------------------------------------
-dll_path = os.path.join(os.path.dirname(__file__), "Wizium", "Binaries", "Windows", "libWizium_x64.dll")
-wiz = Wizium(dll_path)
+
+base_dir = os.path.dirname(__file__)
+
+if platform.system() == "Windows":
+    lib_path = os.path.join(base_dir, "Wizium", "Binaries", "Windows", "libWizium_x64.dll")
+else:
+    lib_path = os.path.join(base_dir, "Wizium", "Binaries", "Linux", "libWizium_x64.so")
+
+wiz = Wizium(lib_path)
 
 #Variable globale
 LIM_MIN = 12000
