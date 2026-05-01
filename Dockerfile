@@ -41,4 +41,4 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 ENV TESSERACT_CMD=/usr/bin/tesseract
 
-CMD ["sh", "-c", "gunicorn backend.Main:app"]
+CMD ["gunicorn", "backend.Main:app", "--bind", "0.0.0.0:8000", "--timeout", "120"]
