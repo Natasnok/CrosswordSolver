@@ -3,15 +3,28 @@ import cv2
 import pytesseract
 import numpy as np
 import re
-from difflib import SequenceMatcher
 
 
-if platform == "win32":
-    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+OCR_TYPOS = {
+    r'\btunnet\b': 'tunnel',
+    r'\bsk\b': 'ski',
+    r'\bCapitate\b': 'Capitale',
+    r'\binventeur\b': 'Inventeur',
+    r'\bGl\b': 'GI',
+}
 
+
+PREP = (
+    r'\b(?:de|des|du|le|la|les|à|au|aux|en|par|sur|un|une|et|ou|'
+    r'se|ce|ne|y|qu|dont|Nations|Saint|Sainte|Mont|Col|Lac)$'
+)
+
+_NUM_LEAD = re.compile(r'^\s*(?:[IVXLCDM]{1,6}|\d{1,3})\s*\.\s*')
+_NUM_MID = re.compile(r'\s+(?:[IVXLCDM]{2,6}|\d+)\s*[.,]?\s*(?=[A-Za-zÀ-ÿ\s]|$)')
+_ARTIFACT = re.compile(r'(?<!\w)\b[A-Za-zÀ-ÿ]{1,2}\.(?=\s+[A-ZÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸ0-9])')
 _SECTION_H = re.compile(r'H\s*O\s*R\s*I\s*Z\s*O\s*N\s*T\s*A\s*L\s*E\s*M\s*E\s*N\s*T', re.I)
 _SECTION_V = re.compile(r'V\s*E\s*R\s*T\s*I\s*C\s*A\s*L\s*E\s*M\s*E\s*N\s*T', re.I)
-
+_CAP_WORD = re.compile(r'^[A-ZÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸ][a-zàâäçéèêëîïôöùûüÿ]')
 
 def _deskew(gray):
     coords = np.column_stack(np.where(gray < 128))
@@ -23,12 +36,9 @@ def _deskew(gray):
         return gray
     h, w = gray.shape
     M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
-    return cv2.warpAffine(
-        gray, M, (w, h),
-        flags=cv2.INTER_CUBIC,
-        borderMode=cv2.BORDER_REPLICATE
-    )
-
+    return cv2.warpAffine(gray, M, (w, h),
+                          flags=cv2.INTER_CUBIC,
+                          borderMode=cv2.BORDER_REPLICATE)
 
 def preprocess_image(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -44,62 +54,130 @@ def preprocess_image(img):
     return gray
 
 
-def _find_section_cut(img):
-    gray = preprocess_image(img)
-    data = pytesseract.image_to_data(
-        gray,
-        lang="fra",
-        config="--oem 3 --psm 6",
-        output_type=pytesseract.Output.DICT
+def best_psm_text(gray):
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+    best_text = ""
+    for psm in [3, 4, 6, 11]:
+        text = pytesseract.image_to_string(gray, lang="fra", config=f"--psm {psm}")
+        if len(text.strip()) > len(best_text.strip()):
+            best_text = text
+
+    return best_text
+
+
+def fix_typos(text: str) -> str:
+    for pattern, replacement in OCR_TYPOS.items():
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    return text
+
+
+def normalize_text(text: str) -> str:
+    text = text.replace('\u2019', "'").replace('\u2018', "'")
+    text = text.replace('\n', ' ')
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
+
+
+def remove_short_ocr_artifacts(text: str) -> str:
+    # Supprime les mini-résidus OCR du style "Gl." "sk." "Ab."
+    # uniquement quand ils sont suivis d'un début probable de nouvelle définition
+    text = re.sub(
+        r'(?<!\w)\b[A-Za-zÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸ]{1,2}\.(?=\s+[A-ZÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸ0-9])',
+        ' ',
+        text
     )
-    scale = gray.shape[0] / img.shape[0]
-
-    for i, text in enumerate(data["text"]):
-        if _SECTION_V.search(str(text)):
-            cut_preprocessed = max(0, data["top"][i] - 20)
-            return int(cut_preprocessed / scale)
-    return None
+    return text
 
 
-def _ocr_zone(img_zone, psm=4):
-    gray = preprocess_image(img_zone)
-    return pytesseract.image_to_string(
-        gray,
-        lang="fra",
-        config=f"--oem 3 --psm {psm}"
+def clean_mot(mot: str) -> str:
+    mot = mot.strip()
+
+    # Supprime numéros ou chiffres romains au début
+    mot = re.sub(r'^(?:\d+|[IVXLCDM]+)\s+', '', mot)
+
+    # Supprime ponctuation parasite en début/fin
+    mot = mot.strip(" ,.;:-–—_")
+
+    # Compacte les espaces
+    mot = re.sub(r'\s{2,}', ' ', mot)
+
+    return mot.strip()
+
+
+def is_valid(mot: str) -> bool:
+    if len(mot) < 3:
+        return False
+
+    # rejette les trucs quasi vides ou sans lettres
+    if not re.search(r'[A-Za-zÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸàâäçéèêëîïôöùûüÿ]', mot):
+        return False
+
+    return True
+
+
+def split_on_capitals(mot: str) -> list[str]:
+    parts = re.split(r'\s+', mot)
+    result = []
+    current = []
+
+    for i, word in enumerate(parts):
+        current.append(word)
+
+        if i < len(parts) - 1:
+            next_word = parts[i + 1]
+            next_is_capital = re.match(
+                r'^[A-ZÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸ][a-zàâäçéèêëîïôöùûüÿ]',
+                next_word
+            )
+            current_is_prep = re.search(PREP, word, flags=re.IGNORECASE)
+
+            if next_is_capital and not current_is_prep:
+                phrase = ' '.join(current).strip()
+                if is_valid(phrase):
+                    result.append(phrase)
+                current = []
+
+    if current:
+        phrase = ' '.join(current).strip()
+        if is_valid(phrase):
+            result.append(phrase)
+
+    return result if result else [mot]
+
+
+def split_definitions(text: str) -> list[str]:
+    # Coupe seulement sur ". " suivi d'une majuscule ou d'un chiffre
+    # ex: "Capitale du Pérou. 12. Ville..." ou "Capitale du Pérou. Inventeur..."
+    chunks = re.split(
+        r'\.\s+(?=[A-ZÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸ0-9])',
+        text
     )
 
+    cleaned = []
+    for chunk in chunks:
+        chunk = clean_mot(chunk)
+        if is_valid(chunk):
+            cleaned.append(chunk)
 
-def ocr_image(img):
-    cut_y = _find_section_cut(img)
-
-    if cut_y and img.shape[0] // 4 < cut_y < img.shape[0] * 3 // 4:
-        text_h = _ocr_zone(img[:cut_y], psm=4)
-        text_v = _ocr_zone(img[cut_y:], psm=4)
-        return text_h, text_v
-
-    text_full = _ocr_zone(img, psm=6)
-    parts_v = _SECTION_V.split(text_full, maxsplit=1)
-    if len(parts_v) == 2:
-        parts_h = _SECTION_H.split(parts_v[0], maxsplit=1)
-        return parts_h[-1], parts_v[1]
-
-    return "", text_full
+    return cleaned
 
 
-def clean_mot(mot):
-    mot = re.sub(r'\b(?:HORIZONTALEMENT|VERTICALEMENT)\b', '', mot)
-    mot = mot.strip(' ,.;:-\u2013\u2014_|\n\r\t')
-    return re.sub(r'\s{2,}', ' ', mot).strip()
+def extract_sections(raw: str) -> list[tuple[str, str]]:
+    parts = re.split(r'VERTICALEMENT', raw, flags=re.IGNORECASE)
+    sections = []
 
-def is_valid(mot):
-    return len(mot) >= 2 and bool(re.search(r'[A-Za-zÀ-ÿ]', mot))
+    if len(parts) >= 2:
+        h_parts = re.split(r'HORIZONTALEMENT', parts[0], flags=re.IGNORECASE)
+        horizontal_text = h_parts[1] if len(h_parts) >= 2 else parts[0]
+        vertical_text = parts[1]
 
+        sections.append(('H', horizontal_text))
+        sections.append(('V', vertical_text))
+    else:
+        sections.append(('V', raw))
 
-def extract_definitions(text):
-    text = clean_mot(text)
-    text = re.sub(r'\b([IVXLCDM]+|\d+)\.\s*', '', text)
-    return [d.strip() for d in text.split('.') if d.strip()]
+    return sections
 
 
 def scan_definitions(nom_image):
@@ -110,17 +188,33 @@ def scan_definitions(nom_image):
     text_h, text_v = ocr_image(img)
 
     result = []
-    print("Texte horizontal extrait :", text_h)
-    print("Texte vertical extrait :", text_v)
+    sections = extract_sections(raw)
 
-    # Découper en définitions
-    defs_h = extract_definitions(text_h)
-    for defi in defs_h:
-        result.append({'mot': defi, 'direction': 'H'})
-    
-    # Vertical  
-    defs_v = extract_definitions(text_v)
-    for defi in defs_v:
-        result.append({'mot': defi, 'direction': 'V'})
-    
+    for direction, text in sections:
+        # Supprime les numéros de définitions du style "1." "12." "IV."
+        text = re.sub(r'\b(?:[IVXLCDM]+|\d+)\s*\.\s*', ' ', text)
+
+        # Supprime petits déchets OCR du style "Gl."
+        text = remove_short_ocr_artifacts(text)
+
+        # Recompacte après suppressions
+        text = re.sub(r'\s{2,}', ' ', text).strip()
+
+        defs = split_definitions(text)
+
+        for d in defs:
+            sub_defs = split_on_capitals(d)
+
+            for sub in sub_defs:
+                sub = clean_mot(sub)
+                if is_valid(sub):
+                    result.append({
+                        "mot": sub,
+                        "direction": direction
+                    })
+
     return result
+
+def scan_and_align(nom_image, test_cases, threshold=0.40):
+    ocr_defs = scan_definitions(nom_image)
+    return align_with_test_cases(ocr_defs, test_cases, threshold=threshold)
