@@ -179,8 +179,8 @@ def solve(cases, grid, used_words=None, index=0, best=None, filled=0, use_dico=T
 
     if nb_candidates == 0:
         if use_dico:
-            cases[index:] = original_order
-            return False, best
+            new_cases = cases[:index] + [c for c in cases[index:] if c is not case]
+            return solve(new_cases, grid, used_words, index, best, filled, use_dico)
         else:
             new_cases = cases[:index] + [c for c in cases[index:] if c is not case]
             return solve(new_cases, grid, used_words, index, best, filled, use_dico)
@@ -214,5 +214,5 @@ def solve_crossword(test_cases, black_cells, width, height, use_dico):
 
     solved, best = solve(test_cases, grid, use_dico=use_dico)
 
-    print(f"Grille avec {best['score']} lettres remplies")
+    print(f"Grille avec {best['score']} mots placés")
     return best["grid"]

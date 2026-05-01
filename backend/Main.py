@@ -98,6 +98,7 @@ def solve_route():
         definition_word_list = scan_definitions(defs_path)
 
         test_cases = build_test_cases(definition_word_list, info_word_list)
+        print("TEST CASES =", test_cases)
         result = solve_crossword(test_cases, pos_case_noire, nbC, nbR, False)
 
         return jsonify({

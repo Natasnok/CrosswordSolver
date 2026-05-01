@@ -47,7 +47,7 @@ export default function Home() {
               
             </p>
             <p className="hero-authors">
-              COQUELLE Addison · FAURON Quentin · LAMKADDEM Yassine · THOMAS Lucas
+              COQUELLE Addison - FAURON Quentin - LAMKADDEM Yassine - THOMAS Lucas
             </p>
           </div>
 
