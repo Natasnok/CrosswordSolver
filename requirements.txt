@@ -1,5 +1,10 @@
-opencv-python
+Flask
+flask-cors
+gunicorn
+requests
+beautifulsoup4
+pytesseract
 numpy
-matplotlib
+opencv-python-headless
 unidecode
 cloudscraper
